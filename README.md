@@ -1,5 +1,11 @@
 # Noise-Editor
-A Maya python based noise tool for animators.  
+The noise editor is a Maya tool for animators developed in python.  
+The backbone of the tool is based on the noise controller from 3dsMax that has been ported over to Maya as the `Shake` plug-in.  
+  
+<p align="center">
+  <img align="center" height="400" src="https://github.com/user-attachments/assets/327ddf73-30e1-4588-b982-19681054a9a1">
+  <img align="center" height="400" src="https://github.com/user-attachments/assets/1fc7bae5-8117-44e2-ac98-f396d7268596">
+</p>
 
 ## Requirements:
 This tool requires the following python packages: [dcc](https://github.com/bhsingleton/dcc) and [mpy](https://github.com/bhsingleton/mpy).  
