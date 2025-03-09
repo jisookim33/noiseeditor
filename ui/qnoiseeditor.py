@@ -4,11 +4,11 @@ from maya import cmds as mc
 from maya.api import OpenMaya as om
 from mpy import mpyscene, mpynode
 from collections import namedtuple
-from Qt import QtCore, QtWidgets, QtGui, QtCompat
 from dcc.generators.inclusiverange import inclusiveRange
 from dcc.maya.libs import plugutils
 from dcc.maya.decorators import animate, undo
 from dcc.ui import qsingletonwindow, qtimespinbox
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui, QtCompat
 from .widgets import qnoisegraph
 from ..libs import noiseutils
 
