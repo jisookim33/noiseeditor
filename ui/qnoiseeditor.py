@@ -55,7 +55,6 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
 
     # region Dunderscores
     __ids__ = (2, 3, 4)
-    __patterns__ = ('*:_Ctrl_*', '*:*_CTRL')
     __plugins__ = ('Shake', 'ComposeTransform')
 
     def __init__(self, *args, **kwargs):
@@ -836,7 +835,7 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
 
         else:
 
-            yield from self.scene.iterNodesByPattern(*self.__patterns__, apiType=om.MFn.kTransform)
+            yield from self.scene.iterAnimatableNodes()
 
     def iterShakes(self, fromSelection=False):
         """
