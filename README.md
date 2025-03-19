@@ -17,10 +17,11 @@ This tool requires the following python packages: [dcc](https://github.com/bhsin
 When downloading these packages from Github make sure to unzip the contents into the Maya scripts folder located inside your user documents folder.  
 It is important to remove any prefixes from the unzipped folder name: `dcc-main` > `dcc`, otherwise the tools will fail to run!  
   
-The following plug-ins are also required: [Shake](https://github.com/bhsingleton/Shake/releases/tag/1.0) and [ComposeTransform](https://github.com/bhsingleton/ComposeTransform/releases/tag/1.0).  
-Unzip the release files and copy the `.mll` file that matches the version of Maya you are using.  
+The following plug-ins are also required: [Shake](https://github.com/bhsingleton/Shake/releases) and [ComposeTransform](https://github.com/bhsingleton/ComposeTransform/releases).  
+The tool will attempt to auto download the plug-ins for you but if want to manually install the plug-ins then read the following:
+On the releases page locate the version of Maya you are using and download the the `.mll` file.  
 Next, go to the Maya user documents location and locate the subfolder that matches the version of Maya you are using.  
-Finally, paste the `.mll` into a `plug-ins` folder. If no `plug-ins` folder exists then go ahead and create one!  
+Finally, move the downloaded `.mll` into a `plug-ins` folder. If no `plug-ins` folder exists then go ahead and create one!  
   
 ## How to Open:  
 Run the following python code from either the script editor or from a shelf button:  
