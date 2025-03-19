@@ -1,3 +1,4 @@
+import os
 import random
 
 from maya import cmds as mc
@@ -5,7 +6,7 @@ from maya.api import OpenMaya as om
 from mpy import mpyscene, mpynode
 from collections import namedtuple
 from dcc.generators.inclusiverange import inclusiveRange
-from dcc.maya.libs import plugutils
+from dcc.maya.libs import plugutils, pluginutils
 from dcc.maya.decorators import animate, undo
 from dcc.ui import qsingletonwindow, qtimespinbox
 from dcc.vendor.Qt import QtCore, QtWidgets, QtGui, QtCompat
@@ -772,16 +773,44 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
         :rtype: None
         """
 
+        # Locate plugins path for downloads
+        #
+        mayaVersion = mc.about(version=True)
+        mayaDirectory = os.path.abspath(os.environ['MAYA_APP_DIR'])
+
+        mayaPlugins = os.path.join(mayaDirectory, mayaVersion, 'plug-ins')
+        pluginutils.ensurePluginPath(mayaPlugins)
+
         # Iterate through required plugins
         #
+        pluginExtension = pluginutils.getPluginExtension()
+        pluginPath = None
+
         for plugin in self.__plugins__:
 
-            isLoaded = mc.pluginInfo(plugin, query=True, loaded=True)
+            # Check if plug-in exists
+            # If not, go ahead and download the plugin from github!
+            #
+            exists = pluginutils.doesPluginExist(plugin)
 
-            if not isLoaded:
+            if not exists:
 
-                log.info(f'Loading plugin: {plugin}')
-                mc.loadPlugin(plugin)
+                pluginUrl = f'https://github.com/bhsingleton/{plugin}/releases/download/{mayaVersion}/{plugin}.{pluginExtension}'
+                pluginPath = os.path.join(mayaPlugins, f'{plugin}.{pluginExtension}')
+
+                pluginutils.downloadPlugin(pluginUrl, pluginPath)
+
+            else:
+
+                pluginPath = pluginutils.pathToPlugin(plugin)
+
+            # Try and load plugin
+            #
+            success = pluginutils.tryLoadPlugin(pluginPath)
+
+            if not success:
+
+                log.warning(f'Unable to load plug-in: {pluginPath}')
 
     def isValidId(self, id):
         """
