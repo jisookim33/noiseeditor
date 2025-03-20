@@ -772,39 +772,52 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
         :rtype: None
         """
 
-        # Locate plugins path for downloads
+        # Check if plug-ins exist
         #
-        mayaVersion = mc.about(version=True)
-        mayaDirectory = os.path.abspath(os.environ['MAYA_APP_DIR'])
+        missingPlugins = [plugin for plugin in self.__plugins__ if not pluginutils.doesPluginExist(plugin)]
+        isMissing = len(missingPlugins) > 0
 
-        mayaPlugins = os.path.join(mayaDirectory, mayaVersion, 'plug-ins')
-        pluginutils.ensurePluginPath(mayaPlugins)
+        if isMissing:
 
-        # Iterate through required plugins
-        #
-        pluginExtension = pluginutils.getPluginExtension()
-        pluginPath = None
-
-        for plugin in self.__plugins__:
-
-            # Check if plug-in exists
-            # If not, go ahead and download the plugin from github!
+            # Prompt user to download plug-ins
             #
-            exists = pluginutils.doesPluginExist(plugin)
+            response = QtWidgets.QMessageBox.question(
+                self,
+                'Noise Editor',
+                'Do you want to download the missing plug-ins?',
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No
+            )
 
-            if not exists:
+            if response == QtWidgets.QMessageBox.No:
+
+                return
+
+            # Check if user plug-in path exists
+            #
+            mayaVersion = mc.about(version=True)
+            mayaDirectory = os.path.abspath(os.environ['MAYA_APP_DIR'])
+            mayaPlugins = os.path.join(mayaDirectory, mayaVersion, 'plug-ins')
+
+            pluginutils.ensurePluginPath(mayaPlugins)
+
+            # Download missing plugins
+            #
+            pluginExtension = pluginutils.getPluginExtension()
+
+            for plugin in missingPlugins:
 
                 pluginUrl = f'https://github.com/bhsingleton/{plugin}/releases/download/{mayaVersion}/{plugin}.{pluginExtension}'
                 pluginPath = os.path.join(mayaPlugins, f'{plugin}.{pluginExtension}')
 
                 pluginutils.downloadPlugin(pluginUrl, pluginPath)
 
-            else:
+        # Try and load plugin
+        #
+        pluginPath = None
 
-                pluginPath = pluginutils.pathToPlugin(plugin)
+        for plugin in self.__plugins__:
 
-            # Try and load plugin
-            #
+            pluginPath = pluginutils.pathToPlugin(plugin)
             success = pluginutils.tryLoadPlugin(pluginPath)
 
             if not success:
