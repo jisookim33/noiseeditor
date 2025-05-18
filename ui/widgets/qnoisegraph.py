@@ -1,6 +1,6 @@
-from Qt import QtCore, QtWidgets, QtGui
 from maya import cmds as mc
 from mpy import mpyscene
+from dcc.vendor.Qt import QtCore, QtWidgets, QtGui
 
 import logging
 logging.basicConfig()
