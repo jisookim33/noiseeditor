@@ -1,4 +1,5 @@
 import os
+import math
 import random
 
 from maya import cmds as mc
@@ -6,6 +7,7 @@ from maya.api import OpenMaya as om
 from mpy import mpyscene, mpynode
 from collections import namedtuple
 from dcc.generators.inclusiverange import inclusiveRange
+from dcc.python import stringutils
 from dcc.maya.libs import plugutils, pluginutils
 from dcc.maya.decorators import animate, undo
 from dcc.ui import qsingletonwindow, qtimespinbox
@@ -813,8 +815,6 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
 
         # Try and load plugin
         #
-        pluginPath = None
-
         for plugin in self.__plugins__:
 
             pluginPath = pluginutils.pathToPlugin(plugin)
@@ -1080,7 +1080,6 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
                     composeTransform.connectPlugs(node['translate'], 'inputScalePivot')
                     composeTransform.connectPlugs(node['rotateOrder'], 'inputRotateOrder')
                     composeTransform.connectPlugs('outputMatrix', plug)
-                    composeTransform.setDoNotWrite(True)
 
                 # Check if position is checked
                 #
@@ -1090,8 +1089,6 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
 
                         shakeName = f'{nodeName}_positionShake'
                         shake = self.scene.createNode('shake', name=shakeName)
-                        shake.setDoNotWrite(True)
-
                         self.setDefaultNoiseProperties(shake)
 
                         shake.connectPlugs('outputTranslate', composeTransform['inputTranslate'])
@@ -1109,8 +1106,6 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
 
                         shakeName = f'{nodeName}_rotationShake'
                         shake = self.scene.createNode('shake', name=shakeName)
-                        shake.setDoNotWrite(True)
-
                         self.setDefaultNoiseProperties(shake)
 
                         shake.connectPlugs('outputRotate', composeTransform['inputRotate'])
@@ -1128,8 +1123,6 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
 
                         shakeName = f'{nodeName}_scaleShake'
                         shake = self.scene.createNode('shake', name=shakeName)
-                        shake.setDoNotWrite(True)
-
                         self.setDefaultNoiseProperties(shake)
 
                         shake.connectPlugs('outputScale', composeTransform['inputScale'])
@@ -1337,32 +1330,55 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
 
             with animate.Animate(state=True):
 
+                # Collect baked data
+                #
+                cache = {}
+
+                if positionEnabled:
+
+                    translateXAnimCurve = noiseItem.node.findAnimCurve('translateX', create=True)
+                    translateYAnimCurve = noiseItem.node.findAnimCurve('translateY', create=True)
+                    translateZAnimCurve = noiseItem.node.findAnimCurve('translateZ', create=True)
+
+                    cache['translateX'] = {frame: translateXAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit())) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+                    cache['translateY'] = {frame: translateYAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit())) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+                    cache['translateZ'] = {frame: translateZAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit())) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+
+                if rotationEnabled:
+
+                    rotateXAnimCurve = noiseItem.node.findAnimCurve('rotateX', create=True)
+                    rotateYAnimCurve = noiseItem.node.findAnimCurve('rotateY', create=True)
+                    rotateZAnimCurve = noiseItem.node.findAnimCurve('rotateZ', create=True)
+
+                    cache['rotateX'] = {frame: math.degrees(rotateXAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit()))) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+                    cache['rotateY'] = {frame: math.degrees(rotateYAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit()))) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+                    cache['rotateZ'] = {frame: math.degrees(rotateZAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit()))) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+
+                if scaleEnabled:
+
+                    scaleXAnimCurve = noiseItem.node.findAnimCurve('scaleX', create=True)
+                    scaleYAnimCurve = noiseItem.node.findAnimCurve('scaleY', create=True)
+                    scaleZAnimCurve = noiseItem.node.findAnimCurve('scaleZ', create=True)
+
+                    cache['scaleX'] = {frame: scaleXAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit())) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+                    cache['scaleY'] = {frame: scaleYAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit())) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+                    cache['scaleZ'] = {frame: scaleZAnimCurve.evaluate(om.MTime(frame, unit=om.MTime.uiUnit())) for frame in inclusiveRange(self.startTime, self.endTime, self.step)}
+
                 # Iterate through time-range
                 #
-                position = om.MVector(noiseItem.node.getAttr('translate'))
-                rotation = om.MVector(noiseItem.node.getAttr('rotate'))
-                scale = om.MVector(noiseItem.node.getAttr('scale'))
-
                 for time in inclusiveRange(self.startTime, self.endTime, self.step):
 
                     # Go to next frame
                     #
                     self.scene.time = time
 
-                    if positionEnabled:
+                    for (attributeName, initialValues) in cache.items():
 
-                        newTranslation = position + om.MVector(noiseItem.transform.getAttr('inputTranslate'))
-                        noiseItem.node.setAttr('translate', newTranslation)
+                        inputAttributeName = f'input{stringutils.pascalize(attributeName)}'
+                        inputValue = noiseItem.transform.getAttr(inputAttributeName)
+                        noiseValue = initialValues[time] + inputValue
 
-                    if rotationEnabled:
-
-                        newRotation = rotation + om.MVector(noiseItem.transform.getAttr('inputRotate'))  # Should be safe to add rotations???
-                        noiseItem.node.setAttr('rotate', newRotation)
-
-                    if scaleEnabled:
-
-                        newScale = scale + om.MVector(noiseItem.transform.getAttr('inputScale'))
-                        noiseItem.node.setAttr('scale', newScale)
+                        noiseItem.node.setAttr(attributeName, noiseValue)
 
                 # Cleanup shake nodes
                 #
