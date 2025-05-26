@@ -1396,8 +1396,10 @@ class QNoiseEditor(qsingletonwindow.QSingletonWindow):
 
                 # Cleanup compose transform node and reset `offsetParentMatrix` plug
                 #
+                offsetParentMatrix = noiseItem.transform.getAttr('inputOffsetParentMatrix')
                 noiseItem.transform.delete()
-                noiseItem.node.setAttr('offsetParentMatrix', om.MMatrix.kIdentity)
+
+                noiseItem.node.setAttr('offsetParentMatrix', offsetParentMatrix)
 
         # Invalidate noise properties
         #
